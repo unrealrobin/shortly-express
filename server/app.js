@@ -78,45 +78,63 @@ app.post('/links',
 // Write your authentication routes here
 /************************************************************/
 app.post('/signup', (req, res, next) => {
-  let amIHere = models.Users.get({ username: req.body.username } )
-    .then(response => {
-      console.log(response);
-      response.redirect('/')
-      res.send(response);
+  var username = req.body.username;
+  var password = req.body.password;
+
+  models.Users.get({username})
+    .then(urser => {
+      if (user) {
+        //redirect
+        throw user;
+      }
+      //create a user
+      return models.User.create({ username, password });
+      //we return it so that the next then statement in our chain gets the result that gets passed
+    })
+    .then(results => {
+
+      return models.Sessions.update({ id: req.session.id}, { userId: results.insertId});
+    })
+    .then(user => {
+      res.redirect('/');
+    })
+    .cathch( user => {
+      res.redirect('/signup');
     });
 
-  //if we got a response, send to login page
-  //otherwise:
-  //.catch(models.Users.create(req.body))
 
-  // return models.Users.create( req.body ) //create the user, get back error or user object
-  // .then((response) => {
-  //   //console.log(response);
-  //   res.send(response);
-  // })
-  // .catch( response.redirect('/'))
-  // .error(error => {
-  //   res.status(500).send(error);
-  // })
-  // .catch( response.redirect('/signup'));
 
+  //check for user
+  //if they exist redirect to login
+  //create a user
+  //upgrade session
+  //redirect user
 });
 
 app.post('/login', (req, res, next) => {
 
+  var username = req.body.username;
+  var password = req.body.password;
 
-  //call compare function
-  //if we get true, ....
-  //if we get false ....
+  models.Users.get({username})
+    .then(user => {
+      if ( !user || models.User.compare(password, user.password, user.salt)) {
+        // redirect to login
+      }
+      return models.Sessions.update({ id: req.session.id}, { userId: user.Id});
+    })
+    .then(() => {
+      res.redirect('/'),
+    })
+    .catch(() => {
+      res.redirect('/login')
+    })
+  //find user by usernam
+  //if found and valid password
+  // rediect to / (login)
+  //otherwise
+  //redirect to /login
 
-  // return models.Users.compare( req.body ) ///checks for user,
-  //   .then((response) => {
-  //     console.log(response);
-  //     res.send(response);
-  //   })
-  //   .error(error => {
-  //     res.status(500).send(error);
-  //   });
 
 });
 
@@ -152,9 +170,3 @@ app.get('/:code', (req, res, next) => {
 });
 
 module.exports = app;
-
-
-// if (error.errno === 1062) {
-//   console.log('Redirecting, user already exists');
-//   res.redirect('/signup');
-// }
